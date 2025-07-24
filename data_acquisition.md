@@ -1,111 +1,128 @@
-# 📋 Vahini AI Pen — Data Acquisition Guide
+# 📋 Vahini AI Pen — Data Acquisition Guide (v0.2)
 
 ## 🧠 Objective
 
-To build a robust IMU dataset for handwriting recognition using the Vahini AI Pen, targeting regional languages like Hindi, Telugu, etc., for character recognition and AI model training.
+To build a high-quality IMU dataset tailored for offline handwriting recognition in regional Indian languages (e.g., Hindi, Telugu), enabling intelligent digital ink conversion and interaction modeling.
 
 ---
 
 ## ✍️ Recording Environment
 
-* **Position**: User should be seated comfortably at a table.
-* **Surface**: Standard A4 white paper (80–100 GSM) placed over 5 supporting sheets.
-* **Lighting**: Well-lit indoor environment with minimal distractions.
-* **Grip**: Natural hand posture. (Encourage right-hand grip initially; left-hand later.)
+* **User Position**: Seated, comfortable posture at a flat desk
+* **Writing Surface**: A4 paper (80–100 GSM), backed with 4–5 sheets for support
+* **Lighting**: Bright, uniform indoor lighting
+* **Hand Posture**: Natural grip; start with right-hand users, extend to left-handers
 
 ---
 
-## 🖋️ Vahini AI Pen Setup
+## 🖋️ Digital Pen Setup (Anonymized)
 
-| Component          | Purpose                   |
-| ------------------ | ------------------------- |
-| Accelerometer (x2) | Motion and tilt detection |
-| Gyroscope          | Angular movement tracking |
-| Magnetometer       | Orientation and stability |
-| Force Sensor       | Pen contact pressure      |
-| BLE SoC (STM32WB)  | Wireless data transfer    |
+| Module             | Role                                     |
+| ------------------ | ---------------------------------------- |
+| IMU Unit           | Captures motion, tilt, angular rotation  |
+| Environmental Unit | Captures compass/orientation vectors     |
+| Pressure Module    | Detects pen–surface contact force        |
+| BLE MCU            | Streams sensor data wirelessly (via BLE) |
 
----
-
-## 🗃️ Data Structure
-
-Each recording will generate:
-
-* `sensor_data.csv`:
-
-  * Timestamps, Acc\_X/Y/Z, Gyro\_X/Y/Z, Mag\_X/Y/Z, Force, Sample ID
-* `labels.csv`:
-
-  * Columns: `char`, `start_time`, `end_time` (referencing `Millis` in `sensor_data.csv`)
-* `calibration.txt`:
-
-  * Sensor offsets, temperature compensation, etc.
+> *Note: Specific sensor brands/models anonymized for vendor-agnostic reproducibility.*
 
 ---
 
-## 🪄 Language Expansion Process
+## 🗃️ Data Schema
 
-| Language | Character Set     | Writing Instructions         |
-| -------- | ----------------- | ---------------------------- |
-| Hindi    | अ–ह, ॠ, ङ, क्ष... | Block and cursive encouraged |
-| Telugu   | అ–ఔ, క–హ          | Include compound characters  |
-| English  | A–Z, a–z          | Follow natural print/cursive |
+Each writing session produces:
 
----
+* `sensor_data.csv`
+  Columns: `timestamp`, `acc_x/y/z`, `gyro_x/y/z`, `mag_x/y/z`, `pressure`, `sample_id`
 
-## 🎯 Data Collection App (To Be Developed)
+* `labels.csv`
+  Format: `char`, `start_time`, `end_time`, `user_id`, `language`
 
-* Connects to Vahini Pen via BLE
-* Displays target characters on screen
-* Tracks written character by IMU and fire button events
-* Auto-stores per-character samples via labels
-* UI in multilingual options for participant comfort
+* `calibration.txt`
+  Sensor offsets, gain, bias correction (per session)
 
 ---
 
-## 🔁 Procedure
+## 🪄 Language-Specific Instructions
 
-1. Display character on tablet/phone
-2. User writes character on paper
-3. Timestamp + IMU + Force data logged
-4. When done, fire button is tapped (optional)
-5. Auto-save entry (segment & label)
-6. Proceed to next character
-
----
-
-## ✅ Guidelines for Participants
-
-* **One character at a time**
-* **Use natural speed**
-* **Ensure pen cap is removed before writing**
-* **Write within boundary (optional guide on page)**
+| Language | Coverage          | Writing Notes                  |
+| -------- | ----------------- | ------------------------------ |
+| Hindi    | अ–ह, ॠ, क्ष, ङ... | Block + cursive, if applicable |
+| Telugu   | అ–ఔ, క–హ, ద్ద...  | Include vowel-modifiers        |
+| English  | A–Z, a–z          | Standard print + cursive       |
 
 ---
 
-## 🧪 Dataset Validation
+## 🎯 Companion App (in development)
 
-* Post-recording, validate each sample visually
-* Use `split_characters.py` for automatic segmentation
-* Store in `.pkl` or `.npy` format for model training
+* BLE-based connection to the pen
+* Displays characters for writing tasks
+* Records IMU + pressure + interaction timestamp
+* Multilingual UI for participant ease
+* Auto-labels character samples per user session
 
 ---
 
-## 📁 Storage Format
+## 🔁 Recording Procedure
+
+1. Character prompt shown on phone/tablet
+2. Participant writes on physical paper
+3. Sensor stream is recorded with timestamps
+4. Optional: “Mark done” tap/gesture used for label tagging
+5. Proceed to next prompt
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/058358e7-9ece-49f3-b587-d2a0612ef3b6" />
+
+
+---
+
+## ✅ Participant Guidelines
+
+* Write **one character per session**
+* Maintain **natural handwriting speed**
+* Pen cap off; tip aligned before each trial
+* Keep strokes within printable area (optional guide)
+
+---
+
+## 🧪 Data Validation
+
+* Manual spot checks for drift, mislabeling
+* Optional preprocessing: `split_characters.py`
+* Store datasets in `.pkl` or `.npy` format (Tensor-compatible)
+
+---
+
+## 📁 Folder Format
 
 ```
-├── user_01/
-│   ├── sensor_data.csv
-│   ├── labels.csv
-│   ├── calibration.txt
-├── user_02/
-│   ├── ...
+/dataset/
+  ├── user_01/
+  │   ├── sensor_data.csv
+  │   ├── labels.csv
+  │   ├── calibration.txt
+  ├── user_02/
+  │   └── ...
 ```
+
+---
+
+## 🧠 Optional: U-Net for Pen-Tip Segmentation
+
+To establish **ground-truth pen trajectory**, optionally integrate:
+
+* **Tablet + external camera setup** (60–120 FPS)
+* Use **U-Net**-based segmentation model to isolate the pen tip
+* Correlate with IMU time-series using synchronized timestamps
+* Enables **multi-modal dataset fusion**: camera + IMU
+
+> This pipeline improves recognition granularity but is not mandatory for core IMU dataset development.
 
 ---
 
 ## 📌 Notes
 
-* Capture at least 5–10 samples per character
-* Add separate folder for each language
-* Annotate dialects if applicable
+* Minimum **5–10 samples per character per user**
+* Separate folders for language/script variations
+* Dialect annotations encouraged
+* Explore **gesture/tap** commands as extended events (`tag="gesture_save"`)
